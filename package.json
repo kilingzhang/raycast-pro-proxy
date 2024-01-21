@@ -9,5 +9,10 @@
   },
   "devDependencies": {
     "wrangler": "^3.0.0"
+  },
+  "dependencies": {
+    "cloudflare-worker-request-data": "^1.0.1",
+    "openai": "^4.25.0",
+    "reflare": "^1.1.5"
   }
 }
