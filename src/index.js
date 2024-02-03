@@ -88,14 +88,74 @@ async function stream_chat_completions(request, env, ctx) {
 
 export default {
 	async fetch(request, env, ctx) {
+
+		const authorization = request.headers.get('Authorization');
+		const users = await env.RAYCAST_PRO_PROXY.get('users', 'json') ?? [];
+		const user = users.find(u => u.token === authorization);
+
 		let url = request.url;
 		let path = new URL(url).pathname;
+
 		if (path === '/api/v1/ai/chat_completions') {
 			return stream_chat_completions(request, env, ctx);
 		}
-		if (request.method === 'PUT' && path === '/api/v1/me/sync') {
-			const settings = await request.json();
-			await env.raycast_pro_proxy.put('settings', JSON.stringify(settings));
+
+		if (path === '/api/v1/me/sync') {
+
+			const failed = {
+				updated: [],
+				updated_at: null,
+				deleted: []
+			};
+
+			const key = `sync-${user?.email}`;
+			const lastSettings = await env.RAYCAST_PRO_PROXY.get(key, 'json');
+
+			if (request.method === 'PUT') {
+
+				if (!user) {
+					return Response.json(failed);
+				}
+
+				const updated_at = new Date().toISOString();
+				const settings = await request.json();
+				const bodyDeleted = settings.deleted;
+				settings.deleted = [];
+				settings.updated_at = updated_at;
+
+				if (!lastSettings) {
+
+					for (const item of settings.updated) {
+						item.updated_at = updated_at;
+						item.created_at = item.client_updated_at;
+					}
+					await env.RAYCAST_PRO_PROXY.put(key, JSON.stringify(settings));
+
+				} else {
+
+					let updated = lastSettings.updated.filter((item) => !bodyDeleted.includes(item.id));
+					for (const item of settings.updated) {
+						item.updated_at = updated_at;
+						item.created_at = item.client_updated_at;
+					}
+					updated = updated.concat(settings.updated);
+					settings.updated = updated;
+					await env.RAYCAST_PRO_PROXY.put(key, JSON.stringify(settings));
+
+				}
+
+				console.debug(`[Sync] Synced with ${settings.updated.length} items and ${bodyDeleted.length} deleted items. Updated at ${updated_at} - @${user?.email}`);
+
+				return Response.json({
+					updated_at: updated_at
+				});
+
+			} else if (request.method === 'GET') {
+
+				const settings = lastSettings ?? failed;
+				return Response.json(settings);
+			}
+			return;
 		}
 		let response = await proxy(request, env, ctx);
 		let body = {};
@@ -113,8 +173,19 @@ export default {
 				body['has_pro_features'] = true;
 				body['eligible_for_cloud_sync'] = true;
 				body['has_better_ai'] = true;
-				body['can_upgrade_to_pro'] = true;
+				body['can_upgrade_to_pro'] = false;
 				body['admin'] = true;
+
+				const user = users.find(u => u.email === body.email) || null;
+
+				if (user?.token !== authorization) {
+					console.debug(`<${body.email}> is logged in.`);
+					await env.RAYCAST_PRO_PROXY.put('users', JSON.stringify([...users, {
+						email: body.email,
+						token: authorization
+					}]));
+				}
+
 				return new Response(JSON.stringify(body), response);
 			case '/api/v1/me/trial_status':
 				body = await response.json();
@@ -169,8 +240,6 @@ export default {
 			case '/api/v1/currencies/crypto':
 				body = await response.json();
 				return new Response(JSON.stringify(body), response);
-			case '/api/v1/me/sync':
-				return Response.json(await env.raycast_pro_proxy.get('sync', 'json'));
 		}
 		return response;
 	}
