@@ -18,6 +18,7 @@ This project is a Cloudflare worker that acts as a proxy for Raycast and integra
 5. OPENAI_API_KEY is the API key for the OpenAI API.
 6. kv_namespaces is the list of key-value namespaces that the worker will use. You can create these namespaces in the Cloudflare dashboard. The worker uses these namespaces to store user data. The namespaces should be created with the following settings:
 	 - Title: `RAYCAST_PRO_PROXY`
+- stash override [raycast.stoverride](raycast.stoverride)
 
 ## Development
 

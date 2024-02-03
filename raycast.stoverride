@@ -1,0 +1,7 @@
+name: Raycast Pro
+desc: Raycast Pro
+http:
+  mitm:
+    - backend.raycast.com
+  url-rewrite:
+    - https://backend.raycast.com https://raycast-pro-proxy.yourcfdomain.workers.dev transparent
