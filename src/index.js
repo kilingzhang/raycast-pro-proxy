@@ -34,7 +34,7 @@ export default {
 
 			if (request.method === 'PUT') {
 
-				await SetSyncSettings(env, user, request.json());
+				await SetSyncSettings(env, user,await request.json());
 				return Response.json({
 					updated_at: new Date().toISOString()
 				});
@@ -45,8 +45,6 @@ export default {
 				return Response.json(settings);
 
 			}
-			return;
-
 		}
 
 		let response = await Proxy(request, env, ctx);
@@ -54,7 +52,6 @@ export default {
 
 		switch (path) {
 			case '/api/v1/me':
-
 				body = await response.json();
 				body['eligible_for_pro_features'] = true;
 				body['has_active_subscription'] = true;
@@ -71,14 +68,11 @@ export default {
 				body['admin'] = true;
 
 				if (user?.token !== authorization) {
-
 					console.debug(`<${body.email}> is logged in.`);
-
 					await AddUser(env, {
 						'email': body.email,
 						'token': authorization
 					});
-
 				}
 
 				return new Response(JSON.stringify(body), response);
@@ -117,8 +111,8 @@ export default {
 						provider: 'google',
 						provider_name: 'Google',
 						requires_better_ai: true,
-						features: ['chat', 'quick_ai', 'commands', 'api'],
-					},
+						features: ['chat', 'quick_ai', 'commands', 'api']
+					}
 				];
 				body['default_models'] = {
 					'chat': 'openai-gpt-4-1106-preview',
@@ -128,6 +122,7 @@ export default {
 				};
 				return new Response(JSON.stringify(body), response);
 			default:
+				body = await response.json();
 				return new Response(JSON.stringify(body), response);
 		}
 

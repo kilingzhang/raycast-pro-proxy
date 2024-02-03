@@ -16,10 +16,11 @@ async function SetSyncSettings(env, user, settings) {
 
 	const key = `sync-${user?.email}`;
 	const updated_at = new Date().toISOString();
-	const lastSettings = await GetStore(env, user);
-	const bodyDeleted = settings.deleted;
+	const lastSettings = await GetStore(env, key);
+	const bodyDeleted = settings?.deleted ?? [];
 	settings.deleted = [];
 	settings.updated_at = updated_at;
+	settings.updated = settings.updated ?? [];
 
 	if (!lastSettings) {
 

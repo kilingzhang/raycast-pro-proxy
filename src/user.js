@@ -11,7 +11,7 @@ async function User(env, authorization) {
 async function AddUser(env, user) {
 	const users = await Users(env);
 	users.push(user);
-	return await SetStore(env, 'users', users);
+	return await SetStore(env, 'users', JSON.stringify(users));
 }
 
 module.exports = {
